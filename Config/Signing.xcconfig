@@ -1,0 +1,6 @@
+// Signing settings live in Config/Local.xcconfig (git-ignored), so your Apple team ID
+// stays out of the repo. Create it with one line, e.g.:
+//   DEVELOPMENT_TEAM = ABCDE12345
+// or just pick your team in Xcode's Signing & Capabilities tab.
+CODE_SIGN_STYLE = Automatic
+#include? "Local.xcconfig"

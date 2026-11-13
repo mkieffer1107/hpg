@@ -1,0 +1,38 @@
+name: HPGQueue
+options:
+  bundleIdPrefix: io.github.mkieffer1107
+  deploymentTarget:
+    iOS: "18.0"
+targets:
+  HPGQueue:
+    type: application
+    platform: iOS
+    sources: [HPGQueue]
+    dependencies:
+      # libssh2 1.11.0 + OpenSSL 1.1.1w, iOS slices of DimaRU/Libssh2Prebuild's CSSH xcframework
+      - framework: Vendor/CSSH.xcframework
+        embed: false
+      - sdk: libz.tbd
+    configFiles:
+      Debug: Config/Signing.xcconfig
+      Release: Config/Signing.xcconfig
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: io.github.mkieffer1107.HPGQueue
+        MARKETING_VERSION: "1.0"
+        CURRENT_PROJECT_VERSION: "1"
+        SWIFT_VERSION: "5.0"
+        TARGETED_DEVICE_FAMILY: "1"
+        GENERATE_INFOPLIST_FILE: YES
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        INFOPLIST_KEY_CFBundleDisplayName: hpg
+        INFOPLIST_KEY_UILaunchScreen_Generation: YES
+        INFOPLIST_KEY_UISupportedInterfaceOrientations: UIInterfaceOrientationPortrait
+        INFOPLIST_KEY_NSLocationWhenInUseUsageDescription: "hpg uses low-accuracy location updates only to keep your HiPerGator SSH session open while the app is in the background. Your location is never stored or sent anywhere."
+        INFOPLIST_KEY_NSLocationAlwaysAndWhenInUseUsageDescription: "hpg uses low-accuracy location updates only to keep your HiPerGator SSH session open while the app is in the background. Your location is never stored or sent anywhere."
+    info:
+      path: HPGQueue/Info.plist
+      properties:
+        UIBackgroundModes: [location]
+        # Lets hpg check that Duo Mobile is installed before opening it (DuoLauncher.swift).
+        LSApplicationQueriesSchemes: ["duo"]
