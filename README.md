@@ -32,12 +32,33 @@
   iPhone Keychain, and only if you choose *Remember password*.
 - **Commands**: everything runs on the login node and is read-only: `squeue`, `sacctmgr`, `sinfo` and
   `blue_quota`. hpg never submits or cancels jobs.
-- **Staying connected**: iOS suspends apps shortly after they leave the screen, which would drop the
-  SSH session. With *Stay connected in background* on (the default), hpg keeps running using the
-  coarsest location updates (about 3 km, never stored or sent anywhere). That's the same approach
-  Blink Shell uses, and you'll see the blue location pill. Turn it off in Settings if you prefer.
-  Swiping the app away always closes the connection.
+- **Staying connected**: see [Why hpg asks for your location](#why-hpg-asks-for-your-location).
 - **Host key**: pinned on first login (trust on first use) and checked on every login after.
+
+## Why hpg asks for your location
+
+<img src="docs/screenshots/location.png" width="200" align="right" alt="Location explainer">
+
+iOS freezes an app a few seconds after you switch away from it, and a frozen app's SSH connection
+drops. Without a workaround you'd type your password and approve Duo again every time you came back.
+
+iOS only lets apps keep running in the background for a few reasons (playing audio, navigation,
+calls…), and location updates are the one an SSH app can use. Blink Shell does the same. So with
+*Stay connected in background* on (the default):
+
+- hpg asks for the **coarsest** location (about 3 km) and **ignores** the results. Nothing is stored
+  or sent anywhere, including to HiPerGator.
+- It's only active while you're logging in or connected; disconnecting turns it off.
+- You'll see the blue location pill in the status bar while hpg is in the background.
+- Swiping hpg away in the app switcher still ends the session.
+
+The first time you tap **Connect**, hpg explains this before iOS asks. Choose **Allow While Using
+App**. *Allow Once* also works, but iOS will ask again every time you open hpg. Prefer not to? Tap
+*Not now* (or turn the setting off later in Settings): hpg works the same while it's on screen, you
+still get about 30 seconds to approve Duo in another app, and leaving it for longer means logging in
+again.
+
+<br clear="right">
 
 ## Install
 
@@ -72,12 +93,12 @@ sign with your own Apple ID and install, without Xcode.
 ### First login
 
 Enter your GatorLink username and password and tap **Connect**. Allow location **While Using App**
-(that's what keeps the session alive in the background), approve the Duo push, and come back to hpg.
+(see [why](#why-hpg-asks-for-your-location)), approve the Duo push, and come back to hpg.
 
 ## Develop
 
 - Debug launch arguments: `-demo` opens on demo data (`-tab 1` for Allocations); `-duo` shows a sample
-  Duo menu; `-pushwait` shows the "Check your phone" screen.
+  Duo menu; `-pushwait` shows the "Check your phone" screen; `-locationintro` shows the location explainer.
 - `HPGQueue/Model/Slurm.swift` has the remote commands and their parsers;
   `HPGQueue/SSH/SSHClient.swift` wraps libssh2 (keyboard-interactive auth, exec, keepalive).
 - The icon's source is `Design/icon.svg`.

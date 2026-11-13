@@ -4,6 +4,8 @@ struct LoginView: View {
     @Environment(Monitor.self) private var monitor
     @State private var password = ""
     @FocusState private var focus: Field?
+    @State private var showLocationIntro = false
+    @State private var connectAfterPermission = false
     private enum Field { case user, password }
 
     var body: some View {
@@ -71,6 +73,33 @@ struct LoginView: View {
             if password.isEmpty, let saved = monitor.savedPassword { password = saved }
             if monitor.user.isEmpty { focus = .user }
         }
+        .sheet(isPresented: $showLocationIntro) {
+            LocationIntroView {
+                // Continue: show iOS's prompt, and log in once it's answered.
+                showLocationIntro = false
+                connectAfterPermission = true
+                monitor.keeper.requestPermission()
+            } notNow: {
+                showLocationIntro = false
+                monitor.stayConnected = false
+                startLogin()
+            }
+        }
+        .onChange(of: monitor.keeper.status) { _, status in
+            guard connectAfterPermission, status != .notDetermined else { return }
+            connectAfterPermission = false
+            startLogin()
+        }
+        #if DEBUG
+        .task {
+            // `-locationintro` previews the location explainer, as if Connect had just been tapped.
+            if CommandLine.arguments.contains("-locationintro") {
+                try? await Task.sleep(for: .milliseconds(300))
+                focus = nil
+                showLocationIntro = true
+            }
+        }
+        #endif
         .onChange(of: monitor.user) { _, _ in
             if let saved = monitor.savedPassword { password = saved }
         }
@@ -80,7 +109,108 @@ struct LoginView: View {
         guard !monitor.user.isEmpty, !password.isEmpty else { return }
         Haptics.tap()
         focus = nil
-        monitor.connect(password: password)
+        // First time with "Stay connected" on: explain the location prompt before iOS shows it.
+        if monitor.stayConnected && monitor.keeper.undecided {
+            showLocationIntro = true
+        } else {
+            startLogin()
+        }
+    }
+
+    private func startLogin() { monitor.connect(password: password) }
+}
+
+/// Shown once, before iOS's location prompt: why hpg asks, and which option to pick.
+struct LocationIntroView: View {
+    let `continue`: () -> Void
+    let notNow: () -> Void
+
+    var body: some View {
+        VStack(spacing: 0) {
+            ScrollView {
+                VStack(alignment: .leading, spacing: 18) {
+                    VStack(spacing: 12) {
+                        Image(systemName: "location.fill")
+                            .font(.system(size: 34, weight: .semibold))
+                            .foregroundStyle(.white)
+                            .frame(width: 64, height: 64)
+                            .background(Color.blue.gradient, in: .rect(cornerRadius: 18, style: .continuous))
+                        Text("Stay connected in the background")
+                            .font(.title2.bold())
+                            .multilineTextAlignment(.center)
+                    }
+                    .frame(maxWidth: .infinity)
+                    .padding(.top, 28)
+
+                    IntroRow(icon: "moon.zzz.fill", tint: .indigo,
+                             title: "iOS pauses apps you leave",
+                             text: "Soon after you switch away, iOS freezes hpg and the connection drops, so you'd need your password and Duo again.")
+                    IntroRow(icon: "location.fill", tint: .blue,
+                             title: "Location keeps hpg running",
+                             text: "It's one of the few things iOS lets keep an app awake. hpg uses the coarsest setting (about 3 km) and ignores the result.")
+                    IntroRow(icon: "lock.shield.fill", tint: .green,
+                             title: "Nothing is stored or sent",
+                             text: "Your location never leaves the phone. A blue pill shows in the status bar while it's on.")
+
+                    VStack(alignment: .leading, spacing: 10) {
+                        Text("On the next screen, choose")
+                            .font(.subheadline).foregroundStyle(.secondary)
+                        Text("Allow While Using App")
+                            .font(.body.weight(.semibold))
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 12)
+                            .background(Color(.tertiarySystemFill), in: .capsule)
+                            .overlay(Capsule().strokeBorder(Color.blue, lineWidth: 2))
+                        Text("Allow Once works too, but iOS will ask again every time you open hpg.")
+                            .font(.footnote).foregroundStyle(.secondary)
+                    }
+                    .padding(16)
+                    .background(Color(.secondarySystemGroupedBackground), in: .rect(cornerRadius: 16, style: .continuous))
+                }
+                .padding(.horizontal, 24)
+            }
+
+            VStack(spacing: 10) {
+                Button { Haptics.tap(); `continue`() } label: {
+                    Text("Continue").font(.headline).frame(maxWidth: .infinity)
+                }
+                .buttonStyle(.borderedProminent)
+                .controlSize(.large)
+                Button { Haptics.tap(); notNow() } label: {
+                    Text("Not now").frame(maxWidth: .infinity)
+                }
+                .controlSize(.large)
+                Text("Not now logs in without background mode. You can turn it on later in Settings.")
+                    .font(.caption).foregroundStyle(.secondary)
+                    .multilineTextAlignment(.center)
+            }
+            .padding(.horizontal, 24)
+            .padding(.vertical, 16)
+        }
+        .background(Color(.systemGroupedBackground))
+        .interactiveDismissDisabled()
+        .onAppear { UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil) }
+    }
+}
+
+private struct IntroRow: View {
+    let icon: String
+    let tint: Color
+    let title: String
+    let text: String
+
+    var body: some View {
+        HStack(alignment: .top, spacing: 14) {
+            Image(systemName: icon)
+                .font(.title3)
+                .foregroundStyle(tint)
+                .frame(width: 30)
+            VStack(alignment: .leading, spacing: 3) {
+                Text(title).font(.subheadline.weight(.semibold))
+                Text(text).font(.subheadline).foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+        }
     }
 }
 

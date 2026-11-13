@@ -1,4 +1,5 @@
 import CoreLocation
+import Observation
 import UIKit
 
 /// iOS suspends an app a few seconds after it leaves the screen, which would drop the SSH
@@ -9,13 +10,15 @@ import UIKit
 /// With "While Using" permission iOS only lets location updates *continue* in the background,
 /// they can't be started there. So updates start while the app is on screen (as soon as a login
 /// begins) and keep running until you disconnect; going to the background then just carries on.
-@MainActor
+@MainActor @Observable
 final class BackgroundKeeper: NSObject, CLLocationManagerDelegate {
-    private let manager = CLLocationManager()
-    private var task: UIBackgroundTaskIdentifier = .invalid
-    private var activity: CLBackgroundActivitySession?
-    private var wanted = false
-    private(set) var running = false
+    @ObservationIgnored private let manager = CLLocationManager()
+    @ObservationIgnored private var task: UIBackgroundTaskIdentifier = .invalid
+    @ObservationIgnored private var activity: CLBackgroundActivitySession?
+    @ObservationIgnored private var wanted = false
+    @ObservationIgnored private(set) var running = false
+    /// Location permission, kept current so the UI can react to the user's choice.
+    private(set) var status: CLAuthorizationStatus = .notDetermined
 
     override init() {
         super.init()
@@ -24,15 +27,13 @@ final class BackgroundKeeper: NSObject, CLLocationManagerDelegate {
         manager.distanceFilter = CLLocationDistanceMax
         manager.pausesLocationUpdatesAutomatically = false
         manager.activityType = .other
+        status = manager.authorizationStatus
     }
 
-    var authorized: Bool {
-        [.authorizedWhenInUse, .authorizedAlways].contains(manager.authorizationStatus)
-    }
-
-    var denied: Bool {
-        [.denied, .restricted].contains(manager.authorizationStatus)
-    }
+    var authorized: Bool { [.authorizedWhenInUse, .authorizedAlways].contains(status) }
+    var denied: Bool { [.denied, .restricted].contains(status) }
+    /// iOS hasn't asked yet, so the next request shows the system prompt.
+    var undecided: Bool { status == .notDetermined }
 
     func requestPermission() {
         if manager.authorizationStatus == .notDetermined { manager.requestWhenInUseAuthorization() }
@@ -76,7 +77,8 @@ final class BackgroundKeeper: NSObject, CLLocationManagerDelegate {
     }
 
     nonisolated func locationManagerDidChangeAuthorization(_ manager: CLLocationManager) {
-        Task { @MainActor in self.startUpdates() }
+        let s = manager.authorizationStatus
+        Task { @MainActor in self.status = s; self.startUpdates() }
     }
     nonisolated func locationManager(_ manager: CLLocationManager, didUpdateLocations locations: [CLLocation]) {}
     nonisolated func locationManager(_ manager: CLLocationManager, didFailWithError error: Error) {}
