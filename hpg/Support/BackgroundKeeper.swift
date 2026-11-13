@@ -28,6 +28,11 @@ final class BackgroundKeeper: NSObject, CLLocationManagerDelegate {
         manager.pausesLocationUpdatesAutomatically = false
         manager.activityType = .other
         status = manager.authorizationStatus
+        // Safety net: stop location the moment hpg is being shut down (e.g. swiped away).
+        NotificationCenter.default.addObserver(forName: UIApplication.willTerminateNotification,
+                                               object: nil, queue: .main) { [weak self] _ in
+            MainActor.assumeIsolated { self?.setWanted(false) }
+        }
     }
 
     var authorized: Bool { [.authorizedWhenInUse, .authorizedAlways].contains(status) }

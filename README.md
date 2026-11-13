@@ -54,7 +54,9 @@ calls…), and location updates are the one an SSH app can use. Blink Shell does
   or sent anywhere, including to HiPerGator.
 - It's only active while you're logging in or connected; disconnecting turns it off.
 - You'll see the blue location pill in the status bar while hpg is in the background.
-- Swiping hpg away in the app switcher still ends the session.
+- Swiping hpg away in the app switcher still ends the session and stops location. iOS may keep
+  listing hpg under *recently used* in Settings › Privacy & Security › Location Services for a while.
+- Turn it on or off any time with the location button at the top of the main screen (filled = on).
 
 The first time you tap **Connect**, hpg explains this before iOS asks. Choose **Allow While Using
 App**. *Allow Once* also works, but iOS will ask again every time you open hpg. Prefer not to? Tap

@@ -56,6 +56,8 @@ struct MainView: View {
     @Environment(Monitor.self) private var monitor
     @State private var showSettings = false
     @State private var tab = UserDefaults.standard.integer(forKey: "tab")
+    @State private var toast: String?
+    @State private var toastTask: Task<Void, Never>?
 
     var body: some View {
         TabView(selection: $tab.onChange { _ in Haptics.select() }) {
@@ -69,11 +71,55 @@ struct MainView: View {
         .safeAreaInset(edge: .top, spacing: 0) {
             if case .lost(let why) = monitor.phase { LostBanner(reason: why) }
         }
+        .overlay(alignment: .top) {
+            if let toast {
+                Text(toast)
+                    .font(.footnote.weight(.medium))
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal, 14).padding(.vertical, 9)
+                    .background(.regularMaterial, in: .capsule)
+                    .shadow(color: .black.opacity(0.12), radius: 8, y: 3)
+                    .padding(.top, 58).padding(.horizontal, 24)
+                    .transition(.move(edge: .top).combined(with: .opacity))
+            }
+        }
+        .animation(.spring(duration: 0.3), value: toast)
         .sheet(isPresented: $showSettings) { SettingsView() }
+    }
+
+    /// Turns "Stay connected in background" (location) on or off, and says what that means.
+    private func toggleBackground() {
+        Haptics.select()
+        monitor.stayConnected.toggle()
+        let on = monitor.stayConnected
+        if on && monitor.keeper.denied {
+            show("Location is off for hpg in iOS Settings, so background mode can't work.")
+        } else {
+            show(on ? "Background on: hpg stays connected when you leave it (uses location)."
+                    : "Background off: no location. hpg disconnects soon after you leave it.")
+        }
+    }
+
+    private func show(_ message: String) {
+        toastTask?.cancel()
+        toast = message
+        toastTask = Task {
+            try? await Task.sleep(for: .seconds(3))
+            if !Task.isCancelled { toast = nil }
+        }
     }
 
     @ToolbarContentBuilder private func toolbar(allocations: Bool) -> some ToolbarContent {
         ToolbarItem(placement: .topBarLeading) { StatusBadge(allocations: allocations) }
+        ToolbarItem(placement: .topBarTrailing) {
+            Button(action: toggleBackground) {
+                Image(systemName: monitor.stayConnected ? "location.fill" : "location.slash")
+                    .foregroundStyle(monitor.stayConnected ? Color.blue : Color.secondary)
+                    .contentTransition(.symbolEffect(.replace))
+            }
+            .accessibilityLabel(monitor.stayConnected ? "Background mode on" : "Background mode off")
+            .accessibilityHint("Turns location-based background mode on or off")
+        }
         ToolbarItem(placement: .topBarTrailing) {
             Button { Haptics.tap(); showSettings = true } label: { Image(systemName: "gearshape") }
         }
