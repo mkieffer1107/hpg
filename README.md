@@ -71,10 +71,10 @@ hpg isn't on the App Store; you build it onto your own phone. With a free Apple 
 2. Clone the repo, then generate and open the project:
    ```bash
    xcodegen generate
-   open HPGQueue.xcodeproj
+   open hpg.xcodeproj
    ```
 3. Add your Apple ID in Xcode › Settings › Accounts (a free one is fine).
-4. Set your team: either pick it under the HPGQueue target › **Signing & Capabilities**, or create
+4. Set your team: either pick it under the hpg target › **Signing & Capabilities**, or create
    `Config/Local.xcconfig` (git-ignored) with `DEVELOPMENT_TEAM = <your team ID>` so it survives
    `xcodegen generate`. If Xcode says the bundle ID is taken, change `PRODUCT_BUNDLE_IDENTIFIER` in
    `project.yml` to something unique.
@@ -99,8 +99,8 @@ Enter your GatorLink username and password and tap **Connect**. Allow location *
 
 - Debug launch arguments: `-demo` opens on demo data (`-tab 1` for Allocations); `-duo` shows a sample
   Duo menu; `-pushwait` shows the "Check your phone" screen; `-locationintro` shows the location explainer.
-- `HPGQueue/Model/Slurm.swift` has the remote commands and their parsers;
-  `HPGQueue/SSH/SSHClient.swift` wraps libssh2 (keyboard-interactive auth, exec, keepalive).
+- `hpg/Model/Slurm.swift` has the remote commands and their parsers;
+  `hpg/SSH/SSHClient.swift` wraps libssh2 (keyboard-interactive auth, exec, keepalive).
 - The icon's source is `Design/icon.svg`.
 - libssh2 1.11.0 and OpenSSL 1.1.1w come prebuilt in `Vendor/CSSH.xcframework` (from
   [DimaRU/Libssh2Prebuild](https://github.com/DimaRU/Libssh2Prebuild)). See

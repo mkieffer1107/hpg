@@ -1,7 +1,7 @@
 import SwiftUI
 
 @main
-struct HPGQueueApp: App {
+struct HpgApp: App {
     @State private var monitor = Monitor()
     @Environment(\.scenePhase) private var scenePhase
 

@@ -3,6 +3,7 @@ import Security
 
 /// Stores the HiPerGator password in the iOS Keychain (this device only, unlocked devices only).
 enum Keychain {
+    // Kept from the app's old name so passwords saved by earlier builds still work.
     private static let service = "io.github.mkieffer1107.HPGQueue.password"
 
     static func password(for account: String) -> String? {
