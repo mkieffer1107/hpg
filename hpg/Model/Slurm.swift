@@ -346,3 +346,60 @@ struct AllocationsSnapshot {
 
     init() {}
 }
+
+// MARK: - one user's jobs (squeue -u)
+
+extension Slurm {
+    /// Slurm usernames are letters, digits, `.`, `_` and `-`; anything else is refused rather than quoted.
+    static func isValidUser(_ u: String) -> Bool {
+        !u.isEmpty && u.count <= 64 && u.allSatisfy { $0.isLetter || $0.isNumber || "._-".contains($0) }
+    }
+
+    /// Their full name from the passwd database, then all their jobs in every account.
+    static func userJobsCommand(_ user: String) -> String? {
+        guard isValidUser(user) else { return nil }
+        return ###"getent passwd '\###(user)' | cut -d: -f5 | cut -d, -f1; echo "##JOBS"; squeue -u '\###(user)' -h -o "%i|%P|%j|%a|%q|%T|%M|%l|%C|%m|%b|%R""###
+    }
+}
+
+/// What one account's share of a user's jobs adds up to.
+struct AccountUsage: Identifiable {
+    var id: String { name }
+    let name: String
+    var running = 0, pending = 0
+    var cpu = 0, gpu = 0, mem = 0.0
+    var pCpu = 0, pGpu = 0
+    var burst = false
+}
+
+struct UserJobsSnapshot {
+    let user: String
+    var realName: String?
+    var jobs: JobsSnapshot
+    var accounts: [AccountUsage] = []
+    var cpu: Int { accounts.reduce(0) { $0 + $1.cpu } }
+    var gpu: Int { accounts.reduce(0) { $0 + $1.gpu } }
+    var mem: Double { accounts.reduce(0) { $0 + $1.mem } }
+
+    init(user: String, output: String) {
+        self.user = user
+        let parts = output.components(separatedBy: "##JOBS")
+        let name = parts.first?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        realName = name.isEmpty ? nil : name
+        jobs = JobsSnapshot(squeue: parts.count > 1 ? parts[1] : "")
+
+        // Per account (burst QOS shown as "<account> burst"), biggest GPU / CPU users first.
+        var byName: [String: AccountUsage] = [:]
+        for r in jobs.main + jobs.burst {
+            let key = r.isBurst ? "\(r.account) burst" : r.account
+            var a = byName[key] ?? AccountUsage(name: key, burst: r.isBurst)
+            if r.state == "RUNNING" {
+                a.running += r.count; a.cpu += r.cpus; a.gpu += r.gpus; a.mem += r.memGB
+            } else {
+                a.pending += r.count; a.pCpu += r.cpus; a.pGpu += r.gpus
+            }
+            byName[key] = a
+        }
+        accounts = byName.values.sorted { ($0.gpu, $0.cpu, $0.pending) > ($1.gpu, $1.cpu, $1.pending) }
+    }
+}

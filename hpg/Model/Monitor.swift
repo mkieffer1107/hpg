@@ -173,6 +173,14 @@ final class Monitor {
         } catch { connectionLost(error) }
     }
 
+    /// One user's jobs across every account (`squeue -u`), for their page.
+    func userJobs(_ user: String) async throws -> UserJobsSnapshot {
+        if demo { return UserJobsSnapshot(user: user, output: DemoData.userJobs(user)) }
+        guard phase == .connected else { throw SSHError.libssh2("Not connected") }
+        guard let cmd = Slurm.userJobsCommand(user) else { throw SSHError.libssh2("Unexpected username \(user)") }
+        return UserJobsSnapshot(user: user, output: try await client.exec(cmd))
+    }
+
     private func refreshJobs() async throws {
         let out = try await client.exec(Slurm.jobsCommand)
         jobs = JobsSnapshot(squeue: out)

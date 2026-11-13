@@ -8,6 +8,7 @@
   <img src="docs/screenshots/jobs.png" width="200" alt="Jobs">
   <img src="docs/screenshots/allocations.png" width="200" alt="Allocations">
   <img src="docs/screenshots/group.png" width="200" alt="A group's page">
+  <img src="docs/screenshots/user.png" width="200" alt="A person's jobs">
   <img src="docs/screenshots/duo.png" width="200" alt="Duo login">
 </p>
 
@@ -21,6 +22,9 @@
 - **Allocations**: free GPUs on the cluster by type; your groups first, with CPU / memory / GPU / burst /
   `/blue` gauges against each group's limits and your own share; a page per group showing who is
   running and waiting in it.
+- **People**: tap anyone in a group to see everything they're running or waiting on, in every account
+  (`squeue -u`): their name, totals, a per-account breakdown (handy for spotting who holds the GPUs),
+  and each job.
 - Refreshes jobs every 15 s and allocations every 30 s (both adjustable), plus pull to refresh.
 
 ## How it works
@@ -30,8 +34,8 @@
   Duo Mobile so you can approve it. If the push is denied or unavailable, you get the full Duo menu,
   which also takes passcodes. There's no server in between; your password is only stored in the
   iPhone Keychain, and only if you choose *Remember password*.
-- **Commands**: everything runs on the login node and is read-only: `squeue`, `sacctmgr`, `sinfo` and
-  `blue_quota`. hpg never submits or cancels jobs.
+- **Commands**: everything runs on the login node and is read-only: `squeue`, `sacctmgr`, `sinfo`,
+  `blue_quota` and `getent` (for full names). hpg never submits or cancels jobs.
 - **Staying connected**: see [Why hpg asks for your location](#why-hpg-asks-for-your-location).
 - **Host key**: pinned on first login (trust on first use) and checked on every login after.
 

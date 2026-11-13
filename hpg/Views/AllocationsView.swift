@@ -63,6 +63,7 @@ struct AllocationsView: View {
         .listSectionSpacing(.compact)
         .navigationTitle("Allocations")
         .navigationDestination(for: String.self) { GroupDetailView(name: $0).onAppear { Haptics.tap() } }
+        .navigationDestination(for: UserRoute.self) { UserJobsView(user: $0.name).onAppear { Haptics.tap() } }
         .refreshable { await monitor.refreshNow(); Haptics.tap() }
     }
 }
@@ -204,13 +205,19 @@ struct GroupDetailView: View {
                     if g.users.isEmpty {
                         Text("Nobody is running or waiting in this group.").foregroundStyle(.secondary)
                     } else {
-                        ForEach(g.users.sorted { $0.isMe && !$1.isMe }) { UserCard(user: $0) }
+                        ForEach(g.users.sorted { $0.isMe && !$1.isMe }) { u in
+                            NavigationLink(value: UserRoute(name: u.name)) { UserCard(user: u) }
+                                .listRowBackground(u.isMe ? Color.accentColor.opacity(0.12) : nil)
+                        }
                     }
                 } header: {
                     Text("Who is using it")
                 } footer: {
-                    Text("Submit with: sbatch --account=\(g.name) --qos=\(g.name)   (burst: --qos=\(g.name)-b)")
-                        .font(.caption2.monospaced())
+                    VStack(alignment: .leading, spacing: 6) {
+                        Text("Tap someone to see all their jobs, in every account.")
+                        Text("Submit with: sbatch --account=\(g.name) --qos=\(g.name)   (burst: --qos=\(g.name)-b)")
+                            .font(.caption2.monospaced())
+                    }
                 }
 
                 if g.burstLimit > 0 {
@@ -304,6 +311,5 @@ struct UserCard: View {
             .font(.caption.monospacedDigit())
         }
         .padding(.vertical, 3)
-        .listRowBackground(user.isMe ? Color.accentColor.opacity(0.12) : nil)
     }
 }

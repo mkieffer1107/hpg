@@ -81,4 +81,38 @@ enum DemoData {
     c0902a-s1 gpu:b200:456(S:0-1) gpu:b200:442(IDX:0) mix
     c0902a-s2 gpu:b200:24(S:0-1) gpu:b200:0(IDX:N/A) drain
     """
+
+    /// `getent` + `squeue -u` output for the made-up users in `allocations`.
+    static func userJobs(_ user: String) -> String {
+        let people: [String: (String, [String])] = [
+            "alex.r": ("Alex Rivera", [
+                "60001001|hpg-rtx6000|md-sim-membrane|smithlab|smithlab|RUNNING|9:14:22|2-00:00:00|48|360G|gres/gpu:rtx_pro_6000:3|c0908a-s5",
+                "60001002|hpg-rtx6000|md-sim-analysis|smithlab|smithlab|PENDING|0:00|12:00:00|32|200G|gres/gpu:rtx_pro_6000:2|(QOSGrpGRES)",
+            ]),
+            "mei.w": ("Mei Wong", [
+                "60002001|hpg-l4|cryo-em-refine|chenlab|chenlab|RUNNING|3:02:51|1-00:00:00|16|120G|gres/gpu:l4:4|c0603a-s2",
+            ]),
+            "omar.h": ("Omar Haddad", [
+                "60003001|hpg-l4|docking-batch|chenlab|chenlab|PENDING|0:00|6:00:00|8|64G|gres/gpu:l4:2|(QOSGrpGRES)",
+            ]),
+            "priya.n": ("Priya Nair", [
+                "60004001|hpg-b200|rlhf-ppo|ml4health|ml4health|RUNNING|7:45:10|1-00:00:00|24|192G|gres/gpu:b200:4|c1006a-s25",
+                "60004002|hpg-b200|reward-model|nlp-core|nlp-core|RUNNING|1:12:33|12:00:00|16|128G|gres/gpu:b200:4|c1007a-s25",
+                "60004003|hpg-b200|reward-model-eval|nlp-core|nlp-core|PENDING|0:00|2:00:00|8|64G|gres/gpu:b200:2|(Priority)",
+            ]),
+            "sam.k": ("Sam Kim", [
+                "60005001|hpg-b200|pretrain-7b|ml4health|ml4health|PENDING|0:00|4-00:00:00|16|128G|gres/gpu:b200:4|(Resources)",
+                "60005002|hpg-b200|pretrain-7b|ml4health|ml4health|PENDING|0:00|4-00:00:00|16|128G|gres/gpu:b200:4|(Priority)",
+            ]),
+            "lena.f": ("Lena Fischer", [
+                "60006001|hpg-default|wrf-ensemble|climate|climate|RUNNING|14:20:05|3-00:00:00|96|720G|N/A|c0[702-703]a-s11",
+            ]),
+            "jordan.l": ("Jordan Lee", (0..<8).map { i in
+                "60007000_\(i)|hpg-default|era5-regrid|climate|climate-b|RUNNING|2:\(String(format: "%02d", 10 + i * 4)):41|8:00:00|32|64G|N/A|c06\(String(format: "%02d", 10 + i))a-s\(i + 4)"
+            }),
+            "demo": ("Demo User", squeue.components(separatedBy: "\n")),
+        ]
+        guard let (name, jobs) = people[user] else { return "\n##JOBS\n" }
+        return name + "\n##JOBS\n" + jobs.joined(separator: "\n")
+    }
 }
