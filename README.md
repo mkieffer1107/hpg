@@ -1,4 +1,4 @@
-<p align="center"><img src="docs/icon.png" width="96" alt="hpg icon"></p>
+<p align="center"><img src="docs/logo.png" width="96" alt="hpg icon"></p>
 
 <h1 align="center">hpg</h1>
 
